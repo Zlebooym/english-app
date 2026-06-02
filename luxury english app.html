@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="奢品英语">
+<meta name="theme-color" content="#0a0a0a">
+<title>奢品英语训练器</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --bg2: #141414;
+    --bg3: #1c1c1c;
+    --bg4: #242424;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f0ede8;
+    --text2: #9a9690;
+    --text3: #5a5752;
+    --gold: #c9a96e;
+    --gold2: #e8c887;
+    --gold-bg: rgba(201,169,110,0.1);
+    --gold-border: rgba(201,169,110,0.25);
+    --green: #4caf7d;
+    --green-bg: rgba(76,175,125,0.12);
+    --red: #e05c5c;
+    --red-bg: rgba(224,92,92,0.12);
+    --blue: #5b9cf6;
+    --blue-bg: rgba(91,156,246,0.12);
+    --radius: 12px;
+    --radius-sm: 8px;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, 'SF Pro Text', 'PingFang SC', sans-serif; overflow: hidden; }
+
+  /* Layout */
+  .app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+  .header { padding: 52px 20px 16px; background: var(--bg); border-bottom: 0.5px solid var(--border); flex-shrink: 0; }
+  .header-title { font-size: 22px; font-weight: 600; letter-spacing: -0.3px; }
+  .header-title span { color: var(--gold); }
+  .header-sub { font-size: 12px; color: var(--text3); margin-top: 3px; }
+  .content { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding-bottom: calc(70px + var(--safe-bottom)); }
+  .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; height: calc(56px + var(--safe-bottom)); padding-bottom: var(--safe-bottom); background: var(--bg2); border-top: 0.5px solid var(--border); display: flex; z-index: 100; }
+  .tab-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; transition: all 0.15s; }
+  .tab-icon { font-size: 22px; transition: transform 0.15s; }
+  .tab-label { font-size: 10px; color: var(--text3); font-weight: 500; }
+  .tab-item.active .tab-label { color: var(--gold); }
+  .tab-item.active .tab-icon { transform: scale(1.1); }
+
+  /* Sections */
+  .section { display: none; padding: 16px; }
+  .section.active { display: block; }
+
+  /* Cards */
+  .card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; }
+  .card-header { padding: 12px 16px 10px; border-bottom: 0.5px solid var(--border); }
+  .card-label { font-size: 11px; font-weight: 600; color: var(--gold); letter-spacing: 0.08em; text-transform: uppercase; }
+
+  /* Phrase rows */
+  .phrase-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 0.5px solid var(--border); }
+  .phrase-row:last-child { border-bottom: none; }
+  .phrase-text { flex: 1; }
+  .phrase-en { font-size: 14px; font-weight: 500; color: var(--text); line-height: 1.4; }
+  .phrase-cn { font-size: 12px; color: var(--text2); margin-top: 3px; line-height: 1.4; }
+  .play-btn { width: 34px; height: 34px; border-radius: 50%; background: var(--bg3); border: 0.5px solid var(--border2); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 15px; flex-shrink: 0; transition: all 0.15s; }
+  .play-btn:active { background: var(--gold-bg); border-color: var(--gold-border); transform: scale(0.94); }
+
+  /* Words grid */
+  .words-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .word-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius-sm); padding: 12px; cursor: pointer; transition: all 0.2s; min-height: 70px; display: flex; flex-direction: column; justify-content: center; }
+  .word-card.flipped { background: var(--gold-bg); border-color: var(--gold-border); }
+  .word-en { font-size: 15px; font-weight: 500; color: var(--text); }
+  .word-cn { font-size: 13px; color: var(--gold2); margin-top: 4px; display: none; }
+  .word-card.flipped .word-cn { display: block; }
+  .word-tag { font-size: 10px; color: var(--text3); margin-top: 5px; font-weight: 500; }
+
+  /* Quiz */
+  .quiz-progress { display: flex; gap: 5px; margin-bottom: 14px; }
+  .prog-dot { flex: 1; height: 3px; border-radius: 2px; background: var(--bg4); transition: background 0.3s; }
+  .prog-dot.correct { background: var(--green); }
+  .prog-dot.wrong { background: var(--red); }
+  .prog-dot.current { background: var(--gold); }
+  .quiz-score { font-size: 13px; color: var(--text2); margin-bottom: 14px; }
+  .quiz-score strong { color: var(--gold); font-size: 16px; }
+  .quiz-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+  .quiz-q { font-size: 16px; font-weight: 500; line-height: 1.5; margin-bottom: 6px; }
+  .quiz-hint { font-size: 12px; color: var(--text3); margin-bottom: 14px; }
+  .quiz-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+  .quiz-opt { padding: 12px 14px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); font-size: 14px; cursor: pointer; text-align: left; background: var(--bg3); color: var(--text); transition: all 0.15s; line-height: 1.4; }
+  .quiz-opt:active:not([disabled]) { transform: scale(0.98); }
+  .quiz-opt.correct { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+  .quiz-opt.wrong { background: var(--red-bg); border-color: var(--red); color: var(--red); }
+  .quiz-feedback { font-size: 13px; padding: 10px 12px; border-radius: var(--radius-sm); margin-bottom: 12px; display: none; line-height: 1.5; }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct { background: var(--green-bg); color: var(--green); }
+  .quiz-feedback.wrong { background: var(--red-bg); color: var(--red); }
+  .next-btn { width: 100%; padding: 13px; border: 0.5px solid var(--gold-border); border-radius: var(--radius-sm); background: var(--gold-bg); font-size: 15px; cursor: pointer; color: var(--gold2); font-weight: 600; transition: all 0.15s; }
+  .next-btn:active { transform: scale(0.98); background: rgba(201,169,110,0.18); }
+
+  /* Chat */
+  .scenario-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 12px; scrollbar-width: none; }
+  .scenario-scroll::-webkit-scrollbar { display: none; }
+  .pill { padding: 7px 14px; border-radius: 20px; font-size: 13px; border: 0.5px solid var(--border2); cursor: pointer; background: var(--bg3); color: var(--text2); white-space: nowrap; transition: all 0.15s; flex-shrink: 0; }
+  .pill.active { background: var(--gold-bg); border-color: var(--gold-border); color: var(--gold2); font-weight: 500; }
+  .chat-box { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 12px; height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; -webkit-overflow-scrolling: touch; }
+  .msg { max-width: 88%; padding: 9px 12px; font-size: 14px; line-height: 1.5; }
+  .msg.ai { background: var(--bg3); border: 0.5px solid var(--border); border-radius: 14px 14px 14px 4px; color: var(--text); align-self: flex-start; }
+  .msg.user { background: var(--gold-bg); border: 0.5px solid var(--gold-border); border-radius: 14px 14px 4px 14px; color: var(--gold2); align-self: flex-end; }
+  .msg.loading { color: var(--text3); font-style: italic; }
+  .chat-input-row { display: flex; gap: 8px; }
+  .chat-input { flex: 1; padding: 11px 14px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); font-size: 14px; background: var(--bg3); color: var(--text); outline: none; -webkit-appearance: none; }
+  .chat-input:focus { border-color: var(--gold-border); }
+  .chat-input::placeholder { color: var(--text3); }
+  .send-btn { padding: 11px 16px; border: 0.5px solid var(--gold-border); border-radius: var(--radius-sm); background: var(--gold-bg); font-size: 14px; cursor: pointer; color: var(--gold2); font-weight: 600; white-space: nowrap; transition: all 0.15s; }
+  .send-btn:active { transform: scale(0.96); }
+  .send-btn:disabled { opacity: 0.4; }
+  .quick-replies { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .qr-btn { padding: 7px 12px; border-radius: 20px; font-size: 12px; border: 0.5px solid var(--border2); cursor: pointer; background: var(--bg3); color: var(--text2); transition: all 0.15s; }
+  .qr-btn:active { background: var(--bg4); }
+
+  /* Tip box */
+  .tip-box { background: var(--gold-bg); border: 0.5px solid var(--gold-border); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 12px; color: var(--text2); margin-bottom: 12px; line-height: 1.5; }
+  .tip-box strong { color: var(--gold); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-title">💼 <span>奢品</span>英语训练器</div>
+    <div class="header-sub">专为奢侈品销售设计 · 视频通话 · 客户沟通</div>
+  </div>
+
+  <div class="content">
+
+    <!-- PHRASES -->
+    <div class="section active" id="section-phrases">
+      <div class="card">
+        <div class="card-header"><div class="card-label">🤝 开场 · 接待客户</div></div>
+        <div id="phrases-greeting"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-label">👜 介绍产品 · 包包 / 鞋子 / 衣服</div></div>
+        <div id="phrases-product"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-label">📦 处理问题 · 跟进订单</div></div>
+        <div id="phrases-followup"></div>
+      </div>
+    </div>
+
+    <!-- WORDS -->
+    <div class="section" id="section-words">
+      <div class="tip-box">👆 <strong>点击卡片</strong>查看中文翻译，再点一次隐藏</div>
+      <div class="words-grid" id="words-grid"></div>
+    </div>
+
+    <!-- QUIZ -->
+    <div class="section" id="section-quiz">
+      <div class="quiz-progress" id="quiz-progress"></div>
+      <div class="quiz-score">得分：<strong id="score-display">0 / 0</strong></div>
+      <div class="quiz-card">
+        <div class="quiz-q" id="quiz-q"></div>
+        <div class="quiz-hint" id="quiz-hint"></div>
+        <div class="quiz-options" id="quiz-opts"></div>
+        <div class="quiz-feedback" id="quiz-feedback"></div>
+        <button class="next-btn" onclick="nextQuestion()">下一题 →</button>
+      </div>
+    </div>
+
+    <!-- CHAT -->
+    <div class="section" id="section-chat">
+      <div class="scenario-scroll" id="scenario-pills"></div>
+      <div class="chat-box" id="chat-box"></div>
+      <div class="quick-replies" id="quick-replies"></div>
+      <div class="chat-input-row">
+        <input class="chat-input" id="chat-input" placeholder="用英文或中文输入..." />
+        <button class="send-btn" id="send-btn" onclick="sendChat()">发送</button>
+      </div>
+      <div class="tip-box" style="margin-top:10px;">💡 <strong>提示：</strong>可以用中文输入，AI会帮你翻译成英文并继续对话练习</div>
+    </div>
+
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab-item active" onclick="switchTab('phrases',this)">
+      <div class="tab-icon">📖</div>
+      <div class="tab-label">句型</div>
+    </div>
+    <div class="tab-item" onclick="switchTab('words',this)">
+      <div class="tab-icon">🃏</div>
+      <div class="tab-label">词汇</div>
+    </div>
+    <div class="tab-item" onclick="switchTab('quiz',this)">
+      <div class="tab-icon">✏️</div>
+      <div class="tab-label">测验</div>
+    </div>
+    <div class="tab-item" onclick="switchTab('chat',this)">
+      <div class="tab-icon">💬</div>
+      <div class="tab-label">对话</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const phrases = {
+  greeting: [
+    { en: "Hi! Nice to meet you. How can I help you today?", cn: "嗨！很高兴认识你，今天有什么可以帮你的？" },
+    { en: "Thank you for reaching out! I'm here to help.", cn: "感谢你联系我！我来为你服务。" },
+    { en: "Can you see me clearly? Is the connection okay?", cn: "你能看清楚我吗？网络连接正常吗？" },
+    { en: "I'll show you the item up close right now.", cn: "我现在给你近距离展示这件商品。" },
+    { en: "Feel free to ask me anything about our products.", cn: "关于我们的产品，随时可以问我任何问题。" },
+  ],
+  product: [
+    { en: "This is 1:1 quality. The details are perfect.", cn: "这是1:1品质，细节非常完美。" },
+    { en: "The stitching is very clean and even. High quality.", cn: "缝线非常整洁均匀，品质很高。" },
+    { en: "The hardware is gold-plated and feels very solid.", cn: "五金件是镀金的，摸起来非常扎实。" },
+    { en: "This is full grain leather. Soft and very durable.", cn: "这是全粒面皮革，柔软又非常耐用。" },
+    { en: "The logo is engraved, not printed. Very authentic.", cn: "Logo是刻上去的，不是印的，非常逼真。" },
+    { en: "It comes with a dust bag and box, just like original.", cn: "附赠防尘袋和盒子，和正品一样。" },
+    { en: "The sole is comfortable and the material is premium.", cn: "鞋底非常舒适，材料是高端的。" },
+    { en: "This color is very popular right now. Trending style.", cn: "这个颜色现在非常流行，是时尚款式。" },
+    { en: "I can send you more photos and a video right now.", cn: "我现在可以给你发更多照片和视频。" },
+    { en: "The size runs true. Same as the original sizing.", cn: "尺码和标准码一致，和正品尺码相同。" },
+  ],
+  followup: [
+    { en: "I'll send you more photos right away.", cn: "我马上给你发更多照片。" },
+    { en: "Your order has been shipped. Here is the tracking number.", cn: "你的订单已经发货了，这是快递单号。" },
+    { en: "I'm sorry for the delay. It will arrive in 3-5 days.", cn: "非常抱歉延误了，3-5天内会到达。" },
+    { en: "Please confirm your address so I can arrange shipping.", cn: "请确认你的地址，这样我可以安排发货。" },
+    { en: "If you have any issue, please contact me immediately.", cn: "如果有任何问题，请立即联系我。" },
+    { en: "I understand your concern. Let me check for you now.", cn: "我理解你的顾虑，我现在帮你查一下。" },
+  ]
+};
+
+const words = [
+  { en: "Leather", cn: "皮革", tag: "材质" }, { en: "Canvas", cn: "帆布", tag: "材质" },
+  { en: "Suede", cn: "绒面皮", tag: "材质" }, { en: "Hardware", cn: "五金配件", tag: "配件" },
+  { en: "Stitching", cn: "缝线", tag: "做工" }, { en: "Logo", cn: "品牌标志", tag: "细节" },
+  { en: "Dust bag", cn: "防尘袋", tag: "配件" }, { en: "Lining", cn: "内衬", tag: "做工" },
+  { en: "Zipper", cn: "拉链", tag: "配件" }, { en: "Chain strap", cn: "链条肩带", tag: "包包" },
+  { en: "Flap", cn: "翻盖", tag: "包包" }, { en: "Clasp", cn: "搭扣", tag: "配件" },
+  { en: "Sole", cn: "鞋底", tag: "鞋子" }, { en: "Upper", cn: "鞋面", tag: "鞋子" },
+  { en: "Insole", cn: "鞋垫", tag: "鞋子" }, { en: "Engraved", cn: "雕刻的", tag: "细节" },
+  { en: "Gold-plated", cn: "镀金的", tag: "材质" }, { en: "Embossed", cn: "压花纹的", tag: "细节" },
+  { en: "Premium quality", cn: "高端品质", tag: "产品" }, { en: "Tracking number", cn: "快递单号", tag: "物流" },
+  { en: "Shipping fee", cn: "运费", tag: "物流" }, { en: "Refund", cn: "退款", tag: "售后" },
+  { en: "Exchange", cn: "换货", tag: "售后" }, { en: "Authentic", cn: "真实的/逼真的", tag: "产品" },
+];
+
+const quizData = [
+  { q: "客户问 '这个包包质量怎么样？' 你说：", hint: "💡 向客户保证品质", opts: ["The quality is very bad.", "This is 1:1 quality. The details are perfect.", "I don't know.", "Maybe good."], ans: 1 },
+  { q: "'我马上给你发更多照片' 怎么说：", hint: "💡 表示立即行动", opts: ["I send photo tomorrow.", "Photo is here.", "I'll send you more photos right away.", "You want photo?"], ans: 2 },
+  { q: "客户问 'Is this real leather?' 你回答：", hint: "💡 确认材质", opts: ["No leather.", "Yes, this is full grain leather. Soft and very durable.", "I don't have leather.", "Leather is expensive."], ans: 1 },
+  { q: "'这个款式现在很流行' 怎么说：", hint: "💡 介绍流行款", opts: ["This is very old style.", "Nobody likes this.", "This color is very popular right now. Trending style.", "This style is ugly."], ans: 2 },
+  { q: "快递延误了你道歉说：", hint: "💡 表示歉意", opts: ["Not my fault.", "I'm sorry for the delay. It will arrive in 3-5 days.", "Shipping is slow always.", "Wait please."], ans: 1 },
+  { q: "'五金配件' 的英文是：", hint: "💡 配件词汇", opts: ["Software", "Hardware", "Leather", "Lining"], ans: 1 },
+  { q: "'请确认你的地址' 怎么说：", hint: "💡 收集客户信息", opts: ["Give me address.", "Address please hurry.", "Please confirm your address so I can arrange shipping.", "What is address?"], ans: 2 },
+  { q: "'防尘袋' 的英文是：", hint: "💡 包包配件词汇", opts: ["Dust bag", "Paper bag", "Zip bag", "Hand bag"], ans: 0 },
+  { q: "'Logo是刻上去的，非常逼真' 怎么说：", hint: "💡 强调细节", opts: ["Logo is painted on.", "Logo is a sticker.", "The logo is engraved, not printed. Very authentic.", "Logo looks fake."], ans: 2 },
+  { q: "'我理解你的顾虑' 怎么说：", hint: "💡 安抚客户", opts: ["I don't care.", "I understand your concern. Let me check for you now.", "Your problem is big.", "Not my problem."], ans: 1 },
+];
+
+const scenarios = ["新客户询问包包","客户询问鞋子","视频通话介绍","处理投诉/追单"];
+const scenarioPrompts = {
+  "新客户询问包包": "You are a customer on Instagram interested in buying a luxury replica bag. Start by asking about a Chanel or LV bag. Keep messages short (1-2 sentences). If user writes Chinese, first show translation in brackets like [English: ...] then respond as customer.",
+  "客户询问鞋子": "You are a customer asking about luxury replica shoes like Gucci or Balenciaga. Start by asking about a specific shoe. Keep messages short. If user writes Chinese, first show translation in brackets like [English: ...] then continue as customer.",
+  "视频通话介绍": "You are on a video call wanting to see luxury replica products. Start by saying you joined the call. Keep replies short. If user writes Chinese, first show translation in brackets like [English: ...] then respond as a video call customer.",
+  "处理投诉/追单": "You are a frustrated customer who ordered a bag 2 weeks ago and haven't received it. Start by asking where your order is. Keep messages short. If user writes Chinese, first show translation in brackets like [English: ...] then respond as frustrated customer."
+};
+const quickReplies = {
+  "新客户询问包包": ["Hi! Can I see the bag?","What quality is it?","How much is shipping?"],
+  "客户询问鞋子": ["Show me the shoes","Is the size true?","What brands do you have?"],
+  "视频通话介绍": ["Can you see me clearly?","Show me the details please","Zoom in on the logo"],
+  "处理投诉/追单": ["I'm sorry for the delay","Let me check your order","I'll send tracking now"],
+};
+
+let currentScenario = "新客户询问包包";
+let chatHistory = [];
+let quizIndex = 0, score = 0, answered = false;
+
+// Render phrases
+function renderPhrases() {
+  ["greeting","product","followup"].forEach(key => {
+    document.getElementById("phrases-"+key).innerHTML = phrases[key].map(p => `
+      <div class="phrase-row">
+        <div class="phrase-text">
+          <div class="phrase-en">${p.en}</div>
+          <div class="phrase-cn">${p.cn}</div>
+        </div>
+        <div class="play-btn" onclick="speak('${p.en.replace(/'/g,"\\'")}')">🔊</div>
+      </div>`).join("");
+  });
+}
+
+// Render words
+function renderWords() {
+  document.getElementById("words-grid").innerHTML = words.map((w,i) => `
+    <div class="word-card" id="wc-${i}" onclick="this.classList.toggle('flipped')">
+      <div class="word-en">${w.en}</div>
+      <div class="word-cn">${w.cn}</div>
+      <div class="word-tag">${w.tag}</div>
+    </div>`).join("");
+}
+
+// TTS
+function speak(text) {
+  if (!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'en-US'; u.rate = 0.82; u.pitch = 1;
+  window.speechSynthesis.speak(u);
+}
+
+// Quiz
+function renderQuiz() {
+  const q = quizData[quizIndex % quizData.length];
+  answered = false;
+  document.getElementById("quiz-q").textContent = q.q;
+  document.getElementById("quiz-hint").textContent = q.hint;
+  document.getElementById("quiz-feedback").className = "quiz-feedback";
+  document.getElementById("quiz-opts").innerHTML = q.opts.map((o,i) => `
+    <button class="quiz-opt" onclick="answerQuiz(${i})">${o}</button>`).join("");
+  // progress
+  const prog = document.getElementById("quiz-progress");
+  prog.innerHTML = quizData.map((_,i) => `<div class="prog-dot${i===quizIndex%quizData.length?' current':''}" id="pdot-${i}"></div>`).join("");
+}
+
+function answerQuiz(i) {
+  if (answered) return;
+  answered = true;
+  const q = quizData[quizIndex % quizData.length];
+  document.querySelectorAll(".quiz-opt").forEach((o,idx) => {
+    o.disabled = true;
+    if (idx === q.ans) o.classList.add("correct");
+    else if (idx === i) o.classList.add("wrong");
+  });
+  const fb = document.getElementById("quiz-feedback");
+  const dotId = "pdot-"+(quizIndex%quizData.length);
+  if (i === q.ans) {
+    score++;
+    fb.textContent = "✓ 答对了！非常棒！";
+    fb.className = "quiz-feedback show correct";
+    document.getElementById(dotId)?.classList.replace("current","correct");
+  } else {
+    fb.innerHTML = "✗ 正确答案：<strong>" + q.opts[q.ans] + "</strong>";
+    fb.className = "quiz-feedback show wrong";
+    document.getElementById(dotId)?.classList.replace("current","wrong");
+  }
+  document.getElementById("score-display").textContent = score + " / " + (quizIndex+1);
+}
+
+function nextQuestion() {
+  quizIndex++;
+  if (quizIndex >= quizData.length) {
+    quizIndex = 0; score = 0;
+  }
+  renderQuiz();
+}
+
+// Tabs
+function switchTab(name, el) {
+  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+  document.querySelectorAll(".tab-item").forEach(t => t.classList.remove("active"));
+  document.getElementById("section-"+name).classList.add("active");
+  el.classList.add("active");
+  if (name === "chat" && chatHistory.length === 0) initChat();
+}
+
+// Scenario pills
+function renderPills() {
+  document.getElementById("scenario-pills").innerHTML = scenarios.map(s => `
+    <div class="pill${s===currentScenario?' active':''}" onclick="setScenario(this,'${s}')">${s}</div>`).join("");
+}
+
+function setScenario(el, s) {
+  document.querySelectorAll(".pill").forEach(p => p.classList.remove("active"));
+  el.classList.add("active");
+  currentScenario = s;
+  chatHistory = [];
+  document.getElementById("chat-box").innerHTML = "";
+  document.getElementById("quick-replies").innerHTML = "";
+  initChat();
+}
+
+// Chat
+function addMsg(text, type) {
+  const box = document.getElementById("chat-box");
+  const d = document.createElement("div");
+  d.className = "msg " + type;
+  d.textContent = text;
+  box.appendChild(d);
+  box.scrollTop = box.scrollHeight;
+  return d;
+}
+
+async function initChat() {
+  const box = document.getElementById("chat-box");
+  box.innerHTML = "";
+  const loading = addMsg("正在连接AI...", "ai loading");
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        system: scenarioPrompts[currentScenario] + " Keep all responses under 2 sentences. Be friendly and natural.",
+        messages: [{ role: "user", content: "Start the scenario now." }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.map(c => c.text||"").join("") || "Hello! How can I help you?";
+    chatHistory = [{ role: "user", content: "Start the scenario now." }, { role: "assistant", content: text }];
+    loading.remove();
+    addMsg(text, "ai");
+    renderQuickReplies();
+  } catch(e) {
+    loading.remove();
+    addMsg("网络错误，请检查连接后重试。", "ai");
+  }
+}
+
+function renderQuickReplies() {
+  const qrs = quickReplies[currentScenario] || [];
+  document.getElementById("quick-replies").innerHTML = qrs.map(q =>
+    `<div class="qr-btn" onclick="sendQuick('${q.replace(/'/g,"\\'")}')">💬 ${q}</div>`).join("");
+}
+
+function sendQuick(text) {
+  document.getElementById("chat-input").value = text;
+  sendChat();
+}
+
+async function sendChat() {
+  const input = document.getElementById("chat-input");
+  const btn = document.getElementById("send-btn");
+  const text = input.value.trim();
+  if (!text || btn.disabled) return;
+  input.value = "";
+  btn.disabled = true;
+  addMsg(text, "user");
+  chatHistory.push({ role: "user", content: text });
+  const loading = addMsg("...", "ai loading");
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        system: scenarioPrompts[currentScenario] + " Keep all responses under 2 sentences.",
+        messages: chatHistory
+      })
+    });
+    const data = await res.json();
+    const reply = data.content?.map(c => c.text||"").join("") || "Could you say that again?";
+    chatHistory.push({ role: "assistant", content: reply });
+    loading.remove();
+    addMsg(reply, "ai");
+  } catch(e) {
+    loading.remove();
+    addMsg("Connection error. Please try again.", "ai");
+  }
+  btn.disabled = false;
+}
+
+// Enter key for chat
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("chat-input").addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); }
+  });
+});
+
+// Init
+renderPhrases();
+renderWords();
+renderQuiz();
+renderPills();
+</script>
+</body>
+</html>
